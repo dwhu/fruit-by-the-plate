@@ -1,6 +1,13 @@
+import os
+import mimetypes
+import requests
+
 from flask import Flask, request, render_template
 from twilio.twiml.messaging_response import MessagingResponse
 from logging.config import dictConfig
+from urllib.parse import urlparse
+
+REQUIRED_NUMBER = '+13145803913'
 
 app = Flask(__name__)
 dictConfig({
@@ -29,13 +36,27 @@ def hello(name=None):
 @app.route("/sms", methods=['GET', 'POST'])
 def sms_reply():
     body = request.values.get('Body', None)
-    app.logger.info('received: %s', body)
 
-    """Respond to incoming calls with a simple text message."""
-    # Start our TwiML response
+    message_sid = request.values.get('MessageSid', '')
+    from_number = request.values.get('From', '')
+    num_media = int(request.values.get('NumMedia', 0))
+    media_files = [(request.values.get("MediaUrl{}".format(i), ''),
+                    request.values.get("MediaContentType{}".format(i), ''))
+                   for i in range(0, num_media)]
+
     resp = MessagingResponse()
+    if from_number != REQUIRED_NUMBER:
+        resp = MessagingResponse()
+        resp.message("Only accepting messages from %s", REQUIRED_NUMBER)
+        return str(resp)
+    else:
+        for (media_url, mime_type) in media_files:
+            file_extension = mimetypes.guess_extension(mime_type)
+            media_sid = os.path.basename(urlparse(media_url).path)
+            file_name = '{sid}{ext}'.format(sid=media_sid, ext=file_extension)
+            app.logger.info(media_url)
 
-    # Add a message
-    resp.message("The Robots are coming! Head for the hills!")
+            resp.message("Uploaded")
 
     return str(resp)
+
