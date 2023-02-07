@@ -1,13 +1,15 @@
 import os
-import mimetypes
-import requests
 
-from flask import Flask, request, render_template
+from instagram import Instagram
+from flask import Flask, request, render_template, send_from_directory
 from twilio.twiml.messaging_response import MessagingResponse
 from logging.config import dictConfig
-from urllib.parse import urlparse
 
-REQUIRED_NUMBER = '+13145803913'
+CREDS_FILE = "/data/creds"
+REQUIRED_NUMBER = os.getenv('REQUIRED_NUMBER')
+BASE_URL = os.getenv('BASE_URL')
+if BASE_URL is None or BASE_URL == "":
+    BASE_URL = "http://127.0.0.1"
 
 app = Flask(__name__)
 dictConfig({
@@ -26,18 +28,38 @@ dictConfig({
     }
 })
 
+instagram = Instagram(app.logger)
+
 
 @app.route('/')
-@app.route('/<name>')
-def hello(name=None):
-    return render_template('hello.html', name=name)
+def hello():
+    return render_template('hello.html')
+
+
+@app.route('/static/<path:path>')
+def serve_static(path):
+    return send_from_directory('static', path)
+
+
+@app.route('/privacy-policy')
+def privacy_policy():
+    return render_template('privacy-policy.html')
+
+
+@app.route("/auth/response")
+def redirect_path():
+    query_params = request.args
+    if "error" in query_params or "code" not in query_params:
+        return render_template('error.html')
+    access_token = query_params.get("access_token")
+    ig_account_id = instagram.get_instgram_account_id(access_token)
+    with open(CREDS_FILE, "r+") as f:
+        f.write(f"{ig_account_id},{access_token}")
+    return render_template('success.html')
 
 
 @app.route("/sms", methods=['GET', 'POST'])
 def sms_reply():
-    body = request.values.get('Body', None)
-
-    message_sid = request.values.get('MessageSid', '')
     from_number = request.values.get('From', '')
     num_media = int(request.values.get('NumMedia', 0))
     media_files = [(request.values.get("MediaUrl{}".format(i), ''),
@@ -50,13 +72,13 @@ def sms_reply():
         resp.message("Only accepting messages from %s", REQUIRED_NUMBER)
         return str(resp)
     else:
-        for (media_url, mime_type) in media_files:
-            file_extension = mimetypes.guess_extension(mime_type)
-            media_sid = os.path.basename(urlparse(media_url).path)
-            file_name = '{sid}{ext}'.format(sid=media_sid, ext=file_extension)
-            app.logger.info(media_url)
+        with open(CREDS_FILE, "r") as f:
+            creds = f.read()
+            [ig_id, access_token] = creds.split(",")
+            for (media_url, mime_type) in media_files:
+                app.logger.info(media_url)
+                instagram.post_image(ig_id, access_token, media_url, "Today's Post")
 
-            resp.message("Uploaded")
+        resp.message("Uploaded")
 
     return str(resp)
-

@@ -1,11 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-  </head>
+  <head></head>
   <body>
-    <h1>Hello from Fly</h1>
-    {% if name %}
-    <h2>and hello to {{name}}</h2>
-    {% endif %}
+  <div id="fb-root"></div>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v16.0&appId=720851756220898&autoLogAppEvents=1" nonce="ZuHhoetT"></script>
+    <h1>Welcome to the <i>Fruit by the Plate</i> Project</h1>
+    <p>
+      Every morning Jafar Zaidi, 74 years old, picks fruit from his backyard for his morning breakfast.
+      Part of this ritual is to wash, cut, and assemble a fruit plate into unique arrangement each day which he takes a photo of and shares with his family.
+      <br/>
+      <br/>
+      This website is a simple application that allows Jafar Zaidi to easily publish his daily fruit plate arrangements to <a href="https://www.instagram.com/fruitbytheplate/">Instagram</a>.
+      <br/>
+      <br/>
+      The website allows him to log in to his <a href="https://www.instagram.com/fruitbytheplate/">`Fruit by the Plate` instagram account</a>. Once logged in, the application stores his credentials and listens to text messages from his phone to a specific Twilio phone number. When it recieves a text message from that number with an image, it automatically uploads the image and caption to his `Fruit by the Plate` instagram account.
+    </p>
+    <img src="/static/img/example-plate.png" />
+    <div class="fb-login-button" data-width="" data-size="large" data-button-type="continue_with" data-layout="default" data-auto-logout-link="false" data-use-continue-as="false"></div>
+      <br/>
+    <a href="/privacy-policy">Privacy Policy</a>
+    <a href="https://github.com/dwhu/fruit-by-the-plate">Code on Github</a>
   </body>
 </html>
